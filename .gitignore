@@ -10,7 +10,11 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
+dist-standalone
 *.local
+
+# vite-plugin-pwa generated files (regenerated on every build)
+dev-dist
 
 # Editor directories and files
 .vscode/*
