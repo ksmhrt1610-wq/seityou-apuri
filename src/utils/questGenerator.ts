@@ -1,8 +1,21 @@
 import { QUEST_TEMPLATES } from '../data/questTemplates'
 import { CATEGORY_LIST } from '../data/categories'
 import type { PersonalizeSettings, QuestInstance, QuestTemplate } from '../types'
-import { computeReward } from './xp'
+import { computeReward, RANK_ORDER } from './xp'
 import { newId } from './id'
+
+/**
+ * As the character grows, quests that were once appropriately challenging
+ * become trivial — this raises the minimum rank preferred for the daily
+ * board so low-rank quests gradually stop appearing. Never a hard cutoff:
+ * callers fall back to the full pool if a category runs dry.
+ */
+export function minDailyRankIndexForLevel(level: number): number {
+  if (level >= 35) return RANK_ORDER.indexOf('C')
+  if (level >= 20) return RANK_ORDER.indexOf('D')
+  if (level >= 10) return RANK_ORDER.indexOf('E')
+  return 0
+}
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr]
@@ -39,6 +52,8 @@ export interface GenerateDailyQuestsOptions {
   jobId?: string
   /** Template ids to leave out entirely, e.g. ones already pinned as resident quests today. */
   excludeTemplateIds?: Set<string>
+  /** Character level — raises the preferred minimum quest rank as it grows. */
+  level?: number
 }
 
 /**
@@ -59,6 +74,7 @@ export function generateDailyQuests(
     ownedItems = new Set<string>(),
     jobId,
     excludeTemplateIds = new Set<string>(),
+    level = 1,
   } = options
 
   const dailyPool = QUEST_TEMPLATES.filter(
@@ -68,6 +84,8 @@ export function generateDailyQuests(
       (!t.requiredItem || ownedItems.has(t.requiredItem)) &&
       (!t.requiredJob || t.requiredJob === jobId),
   )
+  const minRankIndex = minDailyRankIndexForLevel(level)
+  const preferredPool = dailyPool.filter((t) => RANK_ORDER.indexOf(t.rank) >= minRankIndex)
   const categories =
     settings.interests.length > 0 ? settings.interests : CATEGORY_LIST.map((c) => c.key)
   const cycle = shuffle(categories)
@@ -76,7 +94,8 @@ export function generateDailyQuests(
   const usedIds = new Set<string>()
 
   function pickFromCategory(cat: (typeof categories)[number], avoidRecent: boolean) {
-    const candidates = dailyPool.filter(
+    const basePool = preferredPool.length > 0 ? preferredPool : dailyPool
+    const candidates = basePool.filter(
       (t) => t.category === cat && !usedIds.has(t.id) && (!avoidRecent || !recentTemplateIds.has(t.id)),
     )
     const byIntensity = candidates.filter((t) => t.intensity === settings.intensity)

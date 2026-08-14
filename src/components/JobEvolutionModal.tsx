@@ -7,17 +7,32 @@ import type { JobInfo } from '../types'
  * itself happens once in the caller (via store.evolveCurrentJob()) so this
  * component never re-triggers the mutation on re-render/remount.
  */
-export function JobEvolutionModal({ job, onClose }: { job: JobInfo; onClose: () => void }) {
+export function JobEvolutionModal({
+  job,
+  grand,
+  onClose,
+}: {
+  job: JobInfo
+  grand?: boolean
+  onClose: () => void
+}) {
   return (
-    <Modal title="ジョブ進化" onClose={onClose}>
+    <Modal title={grand ? '大いなる進化' : 'ジョブ進化'} onClose={onClose}>
       <div className="flex flex-col items-center gap-2 py-2 text-center">
-        <p className="mb-1 text-xs tracking-widest text-[var(--color-mana-400)]">EVOLUTION</p>
+        <p className="mb-1 text-xs tracking-widest text-[var(--color-mana-400)]">
+          {grand ? 'GRAND EVOLUTION' : 'EVOLUTION'}
+        </p>
         <span className="animate-pulse-glow flex h-20 w-20 items-center justify-center rounded-full border-2 border-[var(--color-gold-500)] text-4xl">
           {job.emblem}
         </span>
         {job.rarity === 'rare' && (
           <span className="rounded-full border border-[var(--color-gold-500)]/60 px-2 py-0.5 text-[10px] text-[var(--color-gold-400)]">
             ユニークジョブ出現!
+          </span>
+        )}
+        {job.rarity === 'legendary' && (
+          <span className="rounded-full border border-[var(--color-gold-500)]/60 px-2 py-0.5 text-[10px] text-[var(--color-gold-400)]">
+            最終形態に到達!
           </span>
         )}
         <h2 className="font-display glow-gold text-xl font-bold text-[var(--color-gold-300)]">{job.name}</h2>

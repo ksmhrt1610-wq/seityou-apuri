@@ -2,13 +2,16 @@ import { useRef, useState } from 'react'
 import { useStore } from '../state/store'
 import { CATEGORY_LIST, CATEGORIES } from '../data/categories'
 import { ITEMS } from '../data/items'
-import { getJob, EVOLUTION_LEVEL } from '../data/jobs'
+import { getJob, EVOLUTION_LEVEL, GRAND_EVOLUTION_LEVEL, JOB_BONUS_PERCENT } from '../data/jobs'
+import { EVOLUTION_TRIALS, GRAND_TRIALS } from '../data/trials'
 import type { Category, Intensity, JobInfo } from '../types'
 import { INTENSITY_LABEL, levelFromTotalXp } from '../utils/xp'
 import { Modal } from '../components/Modal'
 import { JobChangeModal } from '../components/JobChangeModal'
 import { JobEvolutionModal } from '../components/JobEvolutionModal'
 import { ResidentQuestPickerModal } from '../components/ResidentQuestPickerModal'
+import { SkillTreeModal } from '../components/SkillTreeModal'
+import { TrialQuestCard } from '../components/TrialQuestCard'
 import { QUEST_TEMPLATES } from '../data/questTemplates'
 import { useToast } from '../components/Toast'
 
@@ -22,7 +25,13 @@ export function SettingsPage() {
   const importData = useStore((s) => s.importData)
   const jobId = useStore((s) => s.character.jobId)
   const totalXp = useStore((s) => s.character.totalXp)
+  const skillNodes = useStore((s) => s.character.skillNodes)
+  const evolutionTrialCleared = useStore((s) => s.character.evolutionTrialCleared)
+  const grandTrialCleared = useStore((s) => s.character.grandTrialCleared)
   const evolveCurrentJob = useStore((s) => s.evolveCurrentJob)
+  const grandEvolveCurrentJob = useStore((s) => s.grandEvolveCurrentJob)
+  const completeEvolutionTrial = useStore((s) => s.completeEvolutionTrial)
+  const completeGrandTrial = useStore((s) => s.completeGrandTrial)
   const inventory = useStore((s) => s.inventory)
   const addItem = useStore((s) => s.addItem)
   const removeItem = useStore((s) => s.removeItem)
@@ -31,13 +40,17 @@ export function SettingsPage() {
   const [confirmReset, setConfirmReset] = useState(false)
   const [nameDraft, setNameDraft] = useState(settings.adventurerName)
   const [showJobModal, setShowJobModal] = useState(false)
-  const [evolutionResult, setEvolutionResult] = useState<JobInfo | null>(null)
+  const [evolutionResult, setEvolutionResult] = useState<{ job: JobInfo; grand: boolean } | null>(null)
   const [showResidentPicker, setShowResidentPicker] = useState(false)
+  const [showSkillTree, setShowSkillTree] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { pushToast } = useToast()
   const job = getJob(jobId)
   const level = levelFromTotalXp(totalXp).level
-  const canChangeJob = level >= EVOLUTION_LEVEL
+  const canChangeJob = level >= EVOLUTION_LEVEL && evolutionTrialCleared
+  const evolutionTrial = job.tier === 1 ? EVOLUTION_TRIALS[job.id] : undefined
+  const grandTrial = job.tier === 2 && job.rarity === 'rare' ? GRAND_TRIALS[job.id] : undefined
+  const canGrandEvolve = level >= GRAND_EVOLUTION_LEVEL && grandTrialCleared
 
   function toggleItem(itemId: string) {
     if (inventory.includes(itemId)) removeItem(itemId)
@@ -106,39 +119,104 @@ export function SettingsPage() {
                   ユニーク
                 </span>
               )}
+              {job.rarity === 'legendary' && (
+                <span className="rounded-full border border-[var(--color-gold-500)]/50 px-1.5 py-0.5 text-[9px] text-[var(--color-gold-400)]">
+                  最終形態
+                </span>
+              )}
             </div>
             <p className="text-xs text-white/50">{job.description}</p>
             <p className="mt-0.5 text-[11px] text-white/40">
               得意: {job.affinities.map((c) => CATEGORIES[c].label).join('・')}
-              (報酬+{job.tier === 2 ? 35 : 20}%)
+              (報酬+{JOB_BONUS_PERCENT[job.tier]}%)
             </p>
           </div>
         </div>
 
-        {canChangeJob ? (
-          <div className="mt-4 flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => setShowJobModal(true)}
-              className="rounded-lg border border-white/15 px-3 py-1.5 text-xs text-white/60 transition hover:border-white/30 hover:text-white/90"
-            >
-              ジョブチェンジ
-            </button>
-            {job.tier === 1 && (
+        <div className="mt-4 flex flex-col gap-3">
+          {level < EVOLUTION_LEVEL && (
+            <p className="text-[11px] text-white/40">
+              Lv.{EVOLUTION_LEVEL}になると昇級試練に挑戦できます(現在 Lv.{level})
+            </p>
+          )}
+
+          {level >= EVOLUTION_LEVEL && job.tier === 1 && !evolutionTrialCleared && evolutionTrial && (
+            <TrialQuestCard
+              trial={evolutionTrial}
+              job={job}
+              skillNodes={skillNodes}
+              onComplete={completeEvolutionTrial}
+            />
+          )}
+
+          {canChangeJob && job.rarity !== 'rare' && job.tier !== 3 && (
+            <div className="flex flex-wrap gap-2">
               <button
                 type="button"
-                onClick={() => setEvolutionResult(evolveCurrentJob())}
-                className="rounded-lg border border-[var(--color-gold-500)]/60 bg-[var(--color-gold-500)]/15 px-3 py-1.5 text-xs font-semibold text-[var(--color-gold-300)] transition hover:bg-[var(--color-gold-500)]/30"
+                onClick={() => setShowJobModal(true)}
+                className="rounded-lg border border-white/15 px-3 py-1.5 text-xs text-white/60 transition hover:border-white/30 hover:text-white/90"
               >
-                進化する
+                ジョブチェンジ
               </button>
-            )}
-          </div>
-        ) : (
-          <p className="mt-4 text-[11px] text-white/40">
-            Lv.{EVOLUTION_LEVEL}になるとジョブチェンジ・進化が可能になります(現在 Lv.{level})
-          </p>
-        )}
+              {job.tier === 1 && (
+                <button
+                  type="button"
+                  onClick={() => setEvolutionResult({ job: evolveCurrentJob(), grand: false })}
+                  className="rounded-lg border border-[var(--color-gold-500)]/60 bg-[var(--color-gold-500)]/15 px-3 py-1.5 text-xs font-semibold text-[var(--color-gold-300)] transition hover:bg-[var(--color-gold-500)]/30"
+                >
+                  進化する
+                </button>
+              )}
+            </div>
+          )}
+
+          {job.tier === 2 && job.rarity === 'rare' && (
+            <>
+              {level < GRAND_EVOLUTION_LEVEL && (
+                <p className="text-[11px] text-white/40">
+                  Lv.{GRAND_EVOLUTION_LEVEL}になると最終形態への大いなる進化に挑戦できます(現在 Lv.{level})
+                </p>
+              )}
+              {level >= GRAND_EVOLUTION_LEVEL && !grandTrialCleared && grandTrial && (
+                <TrialQuestCard
+                  trial={grandTrial}
+                  job={job}
+                  skillNodes={skillNodes}
+                  onComplete={completeGrandTrial}
+                />
+              )}
+              {canGrandEvolve && (
+                <button
+                  type="button"
+                  onClick={() => setEvolutionResult({ job: grandEvolveCurrentJob(), grand: true })}
+                  className="self-start rounded-lg border border-[var(--color-gold-500)]/60 bg-[var(--color-gold-500)]/15 px-3 py-1.5 text-xs font-semibold text-[var(--color-gold-300)] transition hover:bg-[var(--color-gold-500)]/30"
+                >
+                  最終形態へ進化する
+                </button>
+              )}
+            </>
+          )}
+
+          {job.tier === 3 && (
+            <p className="text-[11px] text-white/40">ジョブとしての最終形態に到達しています。</p>
+          )}
+        </div>
+      </div>
+
+      <div className="rpg-panel p-5 sm:p-6">
+        <div className="flex items-center justify-between">
+          <h2 className="font-display section-title text-sm font-semibold tracking-wide text-white/70">スキルツリー</h2>
+          <button
+            type="button"
+            onClick={() => setShowSkillTree(true)}
+            className="rounded-lg border border-white/15 px-3 py-1.5 text-xs text-white/60 transition hover:border-white/30 hover:text-white/90"
+          >
+            開く
+          </button>
+        </div>
+        <p className="mt-1 text-xs text-white/45">
+          レベルアップごとにスキルポイントを獲得し、分野ごとの獲得量ボーナスを解放できます。
+        </p>
       </div>
 
       <div className="rpg-panel p-5 sm:p-6">
@@ -337,8 +415,13 @@ export function SettingsPage() {
       {showResidentPicker && (
         <ResidentQuestPickerModal onClose={() => setShowResidentPicker(false)} />
       )}
+      {showSkillTree && <SkillTreeModal onClose={() => setShowSkillTree(false)} />}
       {evolutionResult && (
-        <JobEvolutionModal job={evolutionResult} onClose={() => setEvolutionResult(null)} />
+        <JobEvolutionModal
+          job={evolutionResult.job}
+          grand={evolutionResult.grand}
+          onClose={() => setEvolutionResult(null)}
+        />
       )}
 
       {confirmReset && (

@@ -7,12 +7,14 @@ import { applyJobBonus } from '../utils/job'
 export function QuestCard({
   quest,
   job,
+  skillNodes = [],
   onComplete,
   onReroll,
   onRemove,
 }: {
   quest: QuestInstance
   job?: JobInfo
+  skillNodes?: string[]
   onComplete?: (id: string) => void
   onReroll?: (id: string) => void
   onRemove?: (id: string) => void
@@ -20,8 +22,8 @@ export function QuestCard({
   const cat = CATEGORIES[quest.category]
   const isDone = quest.status === 'completed'
   const reward = job
-    ? applyJobBonus({ xp: quest.xpReward, stat: quest.statReward }, quest.category, job)
-    : { xp: quest.xpReward, stat: quest.statReward, bonusApplied: false }
+    ? applyJobBonus({ xp: quest.xpReward, stat: quest.statReward }, quest.category, job, skillNodes)
+    : { xp: quest.xpReward, stat: quest.statReward, bonusApplied: false, jobBonusPercent: 0, skillBonusPercent: 0 }
 
   return (
     <div
@@ -64,8 +66,11 @@ export function QuestCard({
           <span style={{ color: cat.color }}>
             +{reward.stat} {cat.short}
           </span>
-          {reward.bonusApplied && (
+          {reward.jobBonusPercent > 0 && (
             <span className="text-[var(--color-gold-400)]">{job?.emblem} ジョブボーナス</span>
+          )}
+          {reward.skillBonusPercent > 0 && (
+            <span className="text-[var(--color-gold-400)]">⭐ スキルボーナス</span>
           )}
         </div>
 

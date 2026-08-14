@@ -5,7 +5,7 @@ import { QuestPage } from './pages/QuestPage'
 import { LogPage } from './pages/LogPage'
 import { SettingsPage } from './pages/SettingsPage'
 import { OnboardingModal } from './components/OnboardingModal'
-import { ToastProvider } from './components/Toast'
+import { ToastProvider, useToast } from './components/Toast'
 import { RankBadge } from './components/RankBadge'
 import { guildRankFromLevel, levelFromTotalXp } from './utils/xp'
 
@@ -24,6 +24,9 @@ function AppShell() {
   const ensureTodayBoard = useStore((s) => s.ensureTodayBoard)
   const totalXp = useStore((s) => s.character.totalXp)
   const adventurerName = useStore((s) => s.settings.adventurerName)
+  const pendingNotice = useStore((s) => s.pendingNotice)
+  const clearPendingNotice = useStore((s) => s.clearPendingNotice)
+  const { pushToast } = useToast()
 
   useEffect(() => {
     if (!onboarded) return
@@ -38,6 +41,12 @@ function AppShell() {
       document.removeEventListener('visibilitychange', onVisible)
     }
   }, [ensureTodayBoard, onboarded])
+
+  useEffect(() => {
+    if (!pendingNotice) return
+    pushToast(pendingNotice.message, pendingNotice.detail)
+    clearPendingNotice()
+  }, [pendingNotice, pushToast, clearPendingNotice])
 
   const level = levelFromTotalXp(totalXp).level
   const rank = guildRankFromLevel(level)

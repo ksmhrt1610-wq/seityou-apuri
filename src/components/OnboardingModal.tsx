@@ -175,7 +175,7 @@ export function OnboardingModal() {
               </p>
             </div>
             <p className="text-xs text-white/40">
-              レベル{EVOLUTION_LEVEL}に達すると、設定画面からジョブチェンジまたは上位職への進化が可能になります。
+              レベル{EVOLUTION_LEVEL}に達すると昇級試練に挑戦できます。突破すると、ジョブチェンジや上位職への進化が可能になります。
             </p>
             <div className="mt-2 flex gap-2">
               <button

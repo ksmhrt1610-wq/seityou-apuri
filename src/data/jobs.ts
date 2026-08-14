@@ -3,6 +3,9 @@ import type { JobInfo } from '../types'
 /** Character level required before a job change or evolution becomes available. */
 export const EVOLUTION_LEVEL = 10
 
+/** Character level required before a unique job's further (tier-3) evolution becomes available. */
+export const GRAND_EVOLUTION_LEVEL = 20
+
 export const JOBS: JobInfo[] = [
   // ---- tier 1: starting jobs (assigned at random on onboarding) ----
   {
@@ -131,6 +134,7 @@ export const JOBS: JobInfo[] = [
     tier: 2,
     affinities: ['INT', 'WIL'],
     description: '知恵と精神を極めたユニークジョブ。知力・精神力クエストで真価を発揮する。',
+    advancesToGrand: 'archsage',
   },
   {
     id: 'dragoon',
@@ -140,6 +144,7 @@ export const JOBS: JobInfo[] = [
     tier: 2,
     affinities: ['STR', 'VIT'],
     description: '竜と契りを結んだ稀少なユニークジョブ。筋力・体力クエストに秀でる。',
+    advancesToGrand: 'dragon-emperor',
   },
   {
     id: 'paladin',
@@ -149,6 +154,7 @@ export const JOBS: JobInfo[] = [
     tier: 2,
     affinities: ['STR', 'WIL'],
     description: '力と信念を併せ持つユニークジョブ。筋力・精神力クエストに秀でる。',
+    advancesToGrand: 'grand-paladin',
   },
   {
     id: 'alchemist',
@@ -158,6 +164,45 @@ export const JOBS: JobInfo[] = [
     tier: 2,
     affinities: ['INT', 'DEX'],
     description: '知識と手技を融合させるユニークジョブ。知力・器用クエストに秀でる。',
+    advancesToGrand: 'archalchemist',
+  },
+
+  // ---- tier 3: unique jobs' final forms — reached only by clearing the Lv.20 昇級試練 ----
+  {
+    id: 'archsage',
+    name: '大賢者',
+    emblem: '👑🧙',
+    rarity: 'legendary',
+    tier: 3,
+    affinities: ['INT', 'WIL'],
+    description: '賢者としての探究の果てにたどり着く、知と精神の極致。もはや師と仰がれる存在。',
+  },
+  {
+    id: 'dragon-emperor',
+    name: '竜帝',
+    emblem: '👑🐉',
+    rarity: 'legendary',
+    tier: 3,
+    affinities: ['STR', 'VIT'],
+    description: '竜騎士としての力が竜そのものと同格に達した、伝説の中の伝説。',
+  },
+  {
+    id: 'grand-paladin',
+    name: '大聖騎士',
+    emblem: '👑⚜️',
+    rarity: 'legendary',
+    tier: 3,
+    affinities: ['STR', 'WIL'],
+    description: '聖騎士としての力と信念が完成された、揺るぎなき守護者の頂点。',
+  },
+  {
+    id: 'archalchemist',
+    name: '大錬金術師',
+    emblem: '👑⚗️',
+    rarity: 'legendary',
+    tier: 3,
+    affinities: ['INT', 'DEX'],
+    description: '錬金術師としての探究がついに極まった、知と技を統べる者。',
   },
 ]
 
@@ -197,5 +242,12 @@ export function evolveJob(current: JobInfo): JobInfo {
   return matchingUniques[Math.min(index, matchingUniques.length - 1)]
 }
 
-export const JOB_BONUS_MULTIPLIER = 1.2
-export const JOB_BONUS_MULTIPLIER_TIER2 = 1.35
+/**
+ * A unique (tier-2, rare) job's deterministic final form. Returns the job
+ * unchanged if it has no further evolution (i.e. isn't a unique job).
+ */
+export function grandEvolveJob(current: JobInfo): JobInfo {
+  return current.advancesToGrand ? getJob(current.advancesToGrand) : current
+}
+
+export const JOB_BONUS_PERCENT: Record<1 | 2 | 3, number> = { 1: 20, 2: 35, 3: 35 }

@@ -21,6 +21,7 @@ export function QuestPage() {
   const abandonSpecialQuest = useStore((s) => s.abandonSpecialQuest)
   const jobId = useStore((s) => s.character.jobId)
   const job = getJob(jobId)
+  const skillNodes = useStore((s) => s.character.skillNodes)
 
   const { pushToast } = useToast()
   const [showForm, setShowForm] = useState(false)
@@ -81,6 +82,7 @@ export function QuestPage() {
                 key={q.instanceId}
                 quest={q}
                 job={job}
+                skillNodes={skillNodes}
                 onComplete={q.status === 'active' ? handleComplete : undefined}
               />
             ))}
@@ -113,6 +115,7 @@ export function QuestPage() {
                 key={q.instanceId}
                 quest={q}
                 job={job}
+                skillNodes={skillNodes}
                 onComplete={q.status === 'active' ? handleComplete : undefined}
                 onReroll={q.status === 'active' && !q.isCustom ? rerollDailyQuest : undefined}
                 onRemove={q.status === 'active' ? removeActiveQuest : undefined}
@@ -144,6 +147,7 @@ export function QuestPage() {
                 key={q.instanceId}
                 quest={q}
                 job={job}
+                skillNodes={skillNodes}
                 onComplete={handleComplete}
                 onRemove={setAbandonTarget}
               />

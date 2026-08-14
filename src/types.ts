@@ -81,22 +81,30 @@ export interface CharacterState {
   longestStreak: number
   lastCompletionDate: string | null
   jobId: string
+  /** Unlocked skill tree node ids (see data/skillTree.ts). */
+  skillNodes: string[]
+  /** Cleared the Lv.10 昇級試練, unlocking job change / tier-1→2 evolution. */
+  evolutionTrialCleared: boolean
+  /** Cleared the Lv.20 昇級試練, unlocking a unique job's tier-2→3 evolution. */
+  grandTrialCleared: boolean
 }
 
-export type JobRarity = 'common' | 'rare'
+export type JobRarity = 'common' | 'rare' | 'legendary'
 
 export interface JobInfo {
   id: string
   name: string
   emblem: string
   rarity: JobRarity
-  /** 1 = starting job, assigned at onboarding. 2 = advanced/unique, reached only via evolution. */
-  tier: 1 | 2
+  /** 1 = starting job. 2 = advanced/unique, via evolution. 3 = a unique job's final form. */
+  tier: 1 | 2 | 3
   /** Categories this job is good at; quests in these categories earn a reward bonus. */
   affinities: Category[]
   description: string
   /** Tier-1 only: the id of the non-unique advanced job this naturally evolves into. */
   advancesTo?: string
+  /** Tier-2 unique jobs only: the id of this job's tier-3 final form. */
+  advancesToGrand?: string
 }
 
 export interface ItemInfo {

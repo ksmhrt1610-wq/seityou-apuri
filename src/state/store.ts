@@ -1,7 +1,10 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { QUEST_TEMPLATES } from '../data/questTemplates'
-import { pickRandomJob, getJob, evolveJob } from '../data/jobs'
+import { pickRandomJob, getJob, evolveJob, grandEvolveJob } from '../data/jobs'
+import { EVOLUTION_TRIALS, GRAND_TRIALS } from '../data/trials'
+import { SKILL_TREE_NODES, canUnlockNode, spentSkillPoints, totalSkillPointsForLevel } from '../data/skillTree'
+import { CATEGORY_LIST } from '../data/categories'
 import type {
   Category,
   CharacterState,
@@ -12,7 +15,7 @@ import type {
   QuestInstance,
 } from '../types'
 import { generateDailyQuests, instantiateTemplate } from '../utils/questGenerator'
-import { computeReward, daysBetween, todayKey } from '../utils/xp'
+import { computeReward, daysBetween, levelFromTotalXp, todayKey } from '../utils/xp'
 import { applyJobBonus } from '../utils/job'
 import { newId } from '../utils/id'
 
@@ -26,6 +29,11 @@ interface BoardState {
 
 const emptyBoard: BoardState = { date: '', dailyQuestIds: [], residentQuestIds: [] }
 
+interface PendingNotice {
+  message: string
+  detail?: string
+}
+
 interface StoreState {
   character: CharacterState
   settings: PersonalizeSettings
@@ -36,6 +44,8 @@ interface StoreState {
   inventory: string[]
   /** Template ids pinned as "resident" quests — re-instantiated fresh every day. */
   residentTemplateIds: string[]
+  /** Transient one-shot notice (e.g. a missed-day penalty) for the UI to toast and clear. */
+  pendingNotice: PendingNotice | null
 
   ensureTodayBoard: () => void
   completeQuest: (instanceId: string) => void
@@ -56,6 +66,11 @@ interface StoreState {
   updateSettings: (partial: Partial<PersonalizeSettings>) => void
   setJob: (jobId: string) => void
   evolveCurrentJob: () => JobInfo
+  grandEvolveCurrentJob: () => JobInfo
+  completeEvolutionTrial: () => void
+  completeGrandTrial: () => void
+  unlockSkillNode: (nodeId: string) => void
+  clearPendingNotice: () => void
   addItem: (itemId: string) => void
   removeItem: (itemId: string) => void
   resetAll: () => void
@@ -91,6 +106,14 @@ const initialCharacter: CharacterState = {
   longestStreak: 0,
   lastCompletionDate: null,
   jobId: '',
+  skillNodes: [],
+  evolutionTrialCleared: false,
+  grandTrialCleared: false,
+}
+
+function lowestStatCategory(stats: Record<Category, number>): Category {
+  return CATEGORY_LIST.reduce((lowest, c) => (stats[c.key] < stats[lowest.key] ? c : lowest), CATEGORY_LIST[0])
+    .key
 }
 
 export const useStore = create<StoreState>()(
@@ -104,22 +127,37 @@ export const useStore = create<StoreState>()(
       history: [],
       inventory: [],
       residentTemplateIds: [],
+      pendingNotice: null,
 
       ensureTodayBoard: () => {
         const state = get()
         const today = todayKey()
         if (state.board.date === today) return
 
-        // Detect a fully-skipped day (no completion at all yesterday) and
-        // reset the streak; a single missed day already breaks a streak.
+        // Detect a fully-skipped day (no completion at all yesterday): reset
+        // the streak, and dock the character's weakest stat by 1 as a mild
+        // penalty for going a full day without completing anything.
         let { streakDays } = state.character
+        let stats = state.character.stats
+        let pendingNotice = state.pendingNotice
         if (state.character.lastCompletionDate) {
           const gap = daysBetween(state.character.lastCompletionDate, today)
-          if (gap > 1) streakDays = 0
+          if (gap > 1) {
+            streakDays = 0
+            const weakest = lowestStatCategory(stats)
+            if (stats[weakest] > 0) {
+              stats = { ...stats, [weakest]: stats[weakest] - 1 }
+              pendingNotice = {
+                message: 'クエストを怠けたためステータスが低下した',
+                detail: `${CATEGORY_LIST.find((c) => c.key === weakest)?.label} -1`,
+              }
+            }
+          }
         }
 
         const recent = recentTemplateIds(state.history, 2)
         const owned = new Set(state.inventory)
+        const level = levelFromTotalXp(state.character.totalXp).level
 
         // Resident quests get a fresh instance every day, for every pinned template.
         const residentInstances: QuestInstance[] = []
@@ -136,6 +174,7 @@ export const useStore = create<StoreState>()(
           ownedItems: owned,
           jobId: state.character.jobId,
           excludeTemplateIds: residentTemplateIdSet,
+          level,
         })
 
         const questsDict = { ...state.quests }
@@ -148,7 +187,8 @@ export const useStore = create<StoreState>()(
             residentQuestIds: residentInstances.map((q) => q.instanceId),
           },
           quests: questsDict,
-          character: { ...state.character, streakDays },
+          character: { ...state.character, streakDays, stats },
+          pendingNotice,
         })
       },
 
@@ -158,7 +198,12 @@ export const useStore = create<StoreState>()(
         if (!quest || quest.status !== 'active') return
 
         const job = getJob(state.character.jobId)
-        const reward = applyJobBonus({ xp: quest.xpReward, stat: quest.statReward }, quest.category, job)
+        const reward = applyJobBonus(
+          { xp: quest.xpReward, stat: quest.statReward },
+          quest.category,
+          job,
+          state.character.skillNodes,
+        )
 
         const today = todayKey()
         const { character } = state
@@ -229,10 +274,12 @@ export const useStore = create<StoreState>()(
           if (t) recent.add(t)
         }
         const owned = new Set(state.inventory)
+        const level = levelFromTotalXp(state.character.totalXp).level
         const [replacement] = generateDailyQuests(state.settings, 1, {
           recentTemplateIds: recent,
           ownedItems: owned,
           jobId: state.character.jobId,
+          level,
         })
         if (!replacement) return
 
@@ -389,10 +436,12 @@ export const useStore = create<StoreState>()(
             if (t) recent.add(t)
           }
           const owned = new Set(state.inventory)
+          const level = levelFromTotalXp(state.character.totalXp).level
           const extra = generateDailyQuests(newSettings, missing, {
             recentTemplateIds: recent,
             ownedItems: owned,
             jobId: state.character.jobId,
+            level,
           })
           if (extra.length > 0) {
             const questsDict = { ...get().quests }
@@ -419,6 +468,91 @@ export const useStore = create<StoreState>()(
         return evolved
       },
 
+      grandEvolveCurrentJob: () => {
+        const current = getJob(get().character.jobId)
+        const evolved = grandEvolveJob(current)
+        set({ character: { ...get().character, jobId: evolved.id } })
+        return evolved
+      },
+
+      completeEvolutionTrial: () => {
+        const state = get()
+        const job = getJob(state.character.jobId)
+        const trial = EVOLUTION_TRIALS[job.id]
+        if (!trial || state.character.evolutionTrialCleared) return
+        const base = computeReward(trial.rank, 'high')
+        const reward = applyJobBonus(base, job.affinities[0], job, state.character.skillNodes)
+        const entry: HistoryEntry = {
+          id: newId('hist'),
+          instanceId: newId('trial'),
+          templateId: null,
+          title: trial.title,
+          description: trial.description,
+          category: job.affinities[0],
+          rank: trial.rank,
+          kind: 'special',
+          intensity: 'high',
+          xpGained: reward.xp,
+          statGained: reward.stat,
+          completedAt: new Date().toISOString(),
+          isCustom: false,
+        }
+        set({
+          character: {
+            ...state.character,
+            totalXp: state.character.totalXp + reward.xp,
+            stats: { ...state.character.stats, [job.affinities[0]]: state.character.stats[job.affinities[0]] + reward.stat },
+            evolutionTrialCleared: true,
+          },
+          history: [entry, ...state.history],
+        })
+      },
+
+      completeGrandTrial: () => {
+        const state = get()
+        const job = getJob(state.character.jobId)
+        const trial = GRAND_TRIALS[job.id]
+        if (!trial || state.character.grandTrialCleared) return
+        const base = computeReward(trial.rank, 'high')
+        const reward = applyJobBonus(base, job.affinities[0], job, state.character.skillNodes)
+        const entry: HistoryEntry = {
+          id: newId('hist'),
+          instanceId: newId('trial'),
+          templateId: null,
+          title: trial.title,
+          description: trial.description,
+          category: job.affinities[0],
+          rank: trial.rank,
+          kind: 'special',
+          intensity: 'high',
+          xpGained: reward.xp,
+          statGained: reward.stat,
+          completedAt: new Date().toISOString(),
+          isCustom: false,
+        }
+        set({
+          character: {
+            ...state.character,
+            totalXp: state.character.totalXp + reward.xp,
+            stats: { ...state.character.stats, [job.affinities[0]]: state.character.stats[job.affinities[0]] + reward.stat },
+            grandTrialCleared: true,
+          },
+          history: [entry, ...state.history],
+        })
+      },
+
+      unlockSkillNode: (nodeId) => {
+        const state = get()
+        const node = SKILL_TREE_NODES.find((n) => n.id === nodeId)
+        if (!node) return
+        const level = levelFromTotalXp(state.character.totalXp).level
+        const available = totalSkillPointsForLevel(level) - spentSkillPoints(state.character.skillNodes)
+        if (!canUnlockNode(node, state.character.skillNodes, available)) return
+        set({ character: { ...state.character, skillNodes: [...state.character.skillNodes, nodeId] } })
+      },
+
+      clearPendingNotice: () => set({ pendingNotice: null }),
+
       addItem: (itemId) => {
         const state = get()
         if (state.inventory.includes(itemId)) return
@@ -439,6 +573,7 @@ export const useStore = create<StoreState>()(
           history: [],
           inventory: [],
           residentTemplateIds: [],
+          pendingNotice: null,
         })
       },
 
