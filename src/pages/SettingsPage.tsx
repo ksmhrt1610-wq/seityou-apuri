@@ -1,9 +1,12 @@
 import { useRef, useState } from 'react'
 import { useStore } from '../state/store'
-import { CATEGORY_LIST } from '../data/categories'
+import { CATEGORY_LIST, CATEGORIES } from '../data/categories'
+import { ITEMS } from '../data/items'
+import { getJob } from '../data/jobs'
 import type { Category, Intensity } from '../types'
 import { INTENSITY_LABEL } from '../utils/xp'
 import { Modal } from '../components/Modal'
+import { JobChangeModal } from '../components/JobChangeModal'
 import { useToast } from '../components/Toast'
 
 const INTENSITIES: Intensity[] = ['low', 'mid', 'high']
@@ -14,10 +17,21 @@ export function SettingsPage() {
   const resetAll = useStore((s) => s.resetAll)
   const exportData = useStore((s) => s.exportData)
   const importData = useStore((s) => s.importData)
+  const jobId = useStore((s) => s.character.jobId)
+  const inventory = useStore((s) => s.inventory)
+  const addItem = useStore((s) => s.addItem)
+  const removeItem = useStore((s) => s.removeItem)
   const [confirmReset, setConfirmReset] = useState(false)
   const [nameDraft, setNameDraft] = useState(settings.adventurerName)
+  const [showJobModal, setShowJobModal] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { pushToast } = useToast()
+  const job = getJob(jobId)
+
+  function toggleItem(itemId: string) {
+    if (inventory.includes(itemId)) removeItem(itemId)
+    else addItem(itemId)
+  }
 
   function handleExport() {
     const json = exportData()
@@ -70,6 +84,34 @@ export function SettingsPage() {
       </div>
 
       <div className="rpg-panel p-5 sm:p-6">
+        <h2 className="font-display mb-3 text-sm font-semibold tracking-wide text-white/70">ジョブ</h2>
+        <div className="flex items-center gap-3">
+          <span className="text-3xl">{job.emblem}</span>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5">
+              <span className="font-display text-base font-semibold text-white/90">{job.name}</span>
+              {job.rarity === 'rare' && (
+                <span className="rounded-full border border-[var(--color-gold-500)]/50 px-1.5 py-0.5 text-[9px] text-[var(--color-gold-400)]">
+                  ユニーク
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-white/50">{job.description}</p>
+            <p className="mt-0.5 text-[11px] text-white/40">
+              得意: {job.affinities.map((c) => CATEGORIES[c].label).join('・')}(報酬+20%)
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowJobModal(true)}
+            className="shrink-0 rounded-lg border border-white/15 px-3 py-1.5 text-xs text-white/60 transition hover:border-white/30 hover:text-white/90"
+          >
+            ジョブチェンジ
+          </button>
+        </div>
+      </div>
+
+      <div className="rpg-panel p-5 sm:p-6">
         <h2 className="font-display mb-1 text-sm font-semibold tracking-wide text-white/70">得意にしたい分野</h2>
         <p className="mb-3 text-xs text-white/45">
           選んだ分野を中心にクエストが出題されます。何も選ばなければ全分野からバランスよく出題します。
@@ -91,6 +133,46 @@ export function SettingsPage() {
               >
                 {c.label}
               </button>
+            )
+          })}
+        </div>
+      </div>
+
+      <div className="rpg-panel p-5 sm:p-6">
+        <h2 className="font-display mb-1 text-sm font-semibold tracking-wide text-white/70">持っているアイテム</h2>
+        <p className="mb-3 text-xs text-white/45">
+          持っているものを選ぶと、それを使う専用クエストが出題されるようになります。何も選ばなくても通常のクエストは出題されます。
+        </p>
+        <div className="flex flex-col gap-3">
+          {CATEGORY_LIST.map((cat) => {
+            const catItems = ITEMS.filter((i) => i.category === cat.key)
+            if (catItems.length === 0) return null
+            return (
+              <div key={cat.key}>
+                <p className="mb-1.5 text-[11px]" style={{ color: cat.color }}>
+                  {cat.label}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {catItems.map((item) => {
+                    const active = inventory.includes(item.id)
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => toggleItem(item.id)}
+                        className="rounded-full border px-3 py-1.5 text-sm transition"
+                        style={
+                          active
+                            ? { color: cat.color, borderColor: cat.color, backgroundColor: `${cat.color}22` }
+                            : { color: 'rgba(255,255,255,0.5)', borderColor: 'rgba(255,255,255,0.15)' }
+                        }
+                      >
+                        {item.icon} {item.label}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
             )
           })}
         </div>
@@ -182,6 +264,8 @@ export function SettingsPage() {
           すべてリセットする
         </button>
       </div>
+
+      {showJobModal && <JobChangeModal onClose={() => setShowJobModal(false)} />}
 
       {confirmReset && (
         <Modal title="本当にリセットしますか?" onClose={() => setConfirmReset(false)}>

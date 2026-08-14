@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { QUEST_TEMPLATES } from '../data/questTemplates'
+import { pickRandomJob, getJob } from '../data/jobs'
 import type {
   Category,
   CharacterState,
@@ -11,6 +12,7 @@ import type {
 } from '../types'
 import { generateDailyQuests, instantiateTemplate } from '../utils/questGenerator'
 import { computeReward, daysBetween, todayKey } from '../utils/xp'
+import { applyJobBonus } from '../utils/job'
 import { newId } from '../utils/id'
 
 const emptyStats: Record<Category, number> = { STR: 0, VIT: 0, INT: 0, WIL: 0, CHA: 0, DEX: 0 }
@@ -27,6 +29,7 @@ interface StoreState {
   specialActiveIds: string[]
   quests: Record<string, QuestInstance>
   history: HistoryEntry[]
+  inventory: string[]
 
   ensureTodayBoard: () => void
   completeQuest: (instanceId: string) => void
@@ -43,6 +46,9 @@ interface StoreState {
   acceptSpecialQuest: (templateId: string) => void
   abandonSpecialQuest: (instanceId: string) => void
   updateSettings: (partial: Partial<PersonalizeSettings>) => void
+  setJob: (jobId: string) => void
+  addItem: (itemId: string) => void
+  removeItem: (itemId: string) => void
   resetAll: () => void
   exportData: () => string
   importData: (json: string) => boolean
@@ -75,6 +81,7 @@ const initialCharacter: CharacterState = {
   streakDays: 0,
   longestStreak: 0,
   lastCompletionDate: null,
+  jobId: '',
 }
 
 export const useStore = create<StoreState>()(
@@ -86,6 +93,7 @@ export const useStore = create<StoreState>()(
       specialActiveIds: [],
       quests: {},
       history: [],
+      inventory: [],
 
       ensureTodayBoard: () => {
         const state = get()
@@ -101,7 +109,13 @@ export const useStore = create<StoreState>()(
         }
 
         const recent = recentTemplateIds(state.history, 2)
-        const newQuests = generateDailyQuests(state.settings, state.settings.dailyQuestCount, recent)
+        const owned = new Set(state.inventory)
+        const newQuests = generateDailyQuests(
+          state.settings,
+          state.settings.dailyQuestCount,
+          recent,
+          owned,
+        )
 
         const questsDict = { ...state.quests }
         for (const q of newQuests) questsDict[q.instanceId] = q
@@ -118,6 +132,9 @@ export const useStore = create<StoreState>()(
         const quest = state.quests[instanceId]
         if (!quest || quest.status !== 'active') return
 
+        const job = getJob(state.character.jobId)
+        const reward = applyJobBonus({ xp: quest.xpReward, stat: quest.statReward }, quest.category, job)
+
         const today = todayKey()
         const { character } = state
         let { streakDays, longestStreak } = character
@@ -132,10 +149,11 @@ export const useStore = create<StoreState>()(
         }
 
         const newCharacter: CharacterState = {
-          totalXp: character.totalXp + quest.xpReward,
+          ...character,
+          totalXp: character.totalXp + reward.xp,
           stats: {
             ...character.stats,
-            [quest.category]: character.stats[quest.category] + quest.statReward,
+            [quest.category]: character.stats[quest.category] + reward.stat,
           },
           streakDays,
           longestStreak,
@@ -153,8 +171,8 @@ export const useStore = create<StoreState>()(
           rank: quest.rank,
           kind: quest.kind,
           intensity: quest.intensity,
-          xpGained: quest.xpReward,
-          statGained: quest.statReward,
+          xpGained: reward.xp,
+          statGained: reward.stat,
           completedAt,
           isCustom: quest.isCustom,
         }
@@ -183,7 +201,8 @@ export const useStore = create<StoreState>()(
           const t = state.quests[id]?.templateId
           if (t) recent.add(t)
         }
-        const [replacement] = generateDailyQuests(state.settings, 1, recent)
+        const owned = new Set(state.inventory)
+        const [replacement] = generateDailyQuests(state.settings, 1, recent, owned)
         if (!replacement) return
 
         const quests = { ...state.quests }
@@ -269,6 +288,11 @@ export const useStore = create<StoreState>()(
         const newSettings = { ...state.settings, ...partial }
         set({ settings: newSettings })
 
+        // First time onboarding completes, hand out a random starting job.
+        if (partial.onboarded === true && !state.character.jobId) {
+          set({ character: { ...get().character, jobId: pickRandomJob().id } })
+        }
+
         // If today's board is already generated and the player just raised
         // their daily quest count, top it up immediately instead of
         // silently deferring the change to tomorrow.
@@ -284,7 +308,8 @@ export const useStore = create<StoreState>()(
             const t = state.quests[id]?.templateId
             if (t) recent.add(t)
           }
-          const extra = generateDailyQuests(newSettings, missing, recent)
+          const owned = new Set(state.inventory)
+          const extra = generateDailyQuests(newSettings, missing, recent, owned)
           if (extra.length > 0) {
             const questsDict = { ...get().quests }
             for (const q of extra) questsDict[q.instanceId] = q
@@ -299,6 +324,20 @@ export const useStore = create<StoreState>()(
         }
       },
 
+      setJob: (jobId) => {
+        set({ character: { ...get().character, jobId } })
+      },
+
+      addItem: (itemId) => {
+        const state = get()
+        if (state.inventory.includes(itemId)) return
+        set({ inventory: [...state.inventory, itemId] })
+      },
+
+      removeItem: (itemId) => {
+        set({ inventory: get().inventory.filter((id) => id !== itemId) })
+      },
+
       resetAll: () => {
         set({
           character: { ...initialCharacter, stats: { ...emptyStats } },
@@ -307,6 +346,7 @@ export const useStore = create<StoreState>()(
           specialActiveIds: [],
           quests: {},
           history: [],
+          inventory: [],
         })
       },
 
@@ -321,6 +361,7 @@ export const useStore = create<StoreState>()(
             specialActiveIds: state.specialActiveIds,
             quests: state.quests,
             history: state.history,
+            inventory: state.inventory,
           },
           null,
           2,
@@ -340,13 +381,20 @@ export const useStore = create<StoreState>()(
           ) {
             return false
           }
+          const importedCharacter: CharacterState = {
+            ...initialCharacter,
+            ...data.character,
+            stats: { ...emptyStats, ...data.character.stats },
+            jobId: data.character.jobId || pickRandomJob().id,
+          }
           set({
-            character: { ...initialCharacter, ...data.character, stats: { ...emptyStats, ...data.character.stats } },
+            character: importedCharacter,
             settings: { ...initialSettings, ...data.settings },
             board: data.board ?? { date: '', dailyQuestIds: [] },
             specialActiveIds: Array.isArray(data.specialActiveIds) ? data.specialActiveIds : [],
             quests: data.quests,
             history: data.history,
+            inventory: Array.isArray(data.inventory) ? data.inventory : [],
           })
           return true
         } catch {

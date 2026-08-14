@@ -23,6 +23,8 @@ export interface QuestTemplate {
   title: string
   description: string
   estMinutes: number
+  /** Item id (see data/items.ts). If set, this quest only appears when the player owns the item. */
+  requiredItem?: string
 }
 
 export type QuestStatus = 'active' | 'completed' | 'abandoned'
@@ -37,6 +39,7 @@ export interface QuestInstance {
   title: string
   description: string
   estMinutes: number
+  /** Base reward, before any job-affinity bonus is applied. */
   xpReward: number
   statReward: number
   isCustom: boolean
@@ -75,4 +78,24 @@ export interface CharacterState {
   streakDays: number
   longestStreak: number
   lastCompletionDate: string | null
+  jobId: string
+}
+
+export type JobRarity = 'common' | 'rare'
+
+export interface JobInfo {
+  id: string
+  name: string
+  emblem: string
+  rarity: JobRarity
+  /** Categories this job is good at; quests in these categories earn a reward bonus. */
+  affinities: Category[]
+  description: string
+}
+
+export interface ItemInfo {
+  id: string
+  label: string
+  icon: string
+  category: Category
 }

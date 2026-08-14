@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useStore } from '../state/store'
-import { CATEGORY_LIST } from '../data/categories'
+import { CATEGORY_LIST, CATEGORIES } from '../data/categories'
+import { pickRandomJob } from '../data/jobs'
 import type { Category, Intensity } from '../types'
 import { INTENSITY_LABEL } from '../utils/xp'
 
@@ -8,16 +9,19 @@ const INTENSITIES: Intensity[] = ['low', 'mid', 'high']
 
 export function OnboardingModal() {
   const updateSettings = useStore((s) => s.updateSettings)
+  const setJob = useStore((s) => s.setJob)
   const [step, setStep] = useState(0)
   const [name, setName] = useState('')
   const [interests, setInterests] = useState<Category[]>([])
   const [intensity, setIntensity] = useState<Intensity>('mid')
+  const [revealedJob] = useState(() => pickRandomJob())
 
   function toggle(cat: Category) {
     setInterests((prev) => (prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]))
   }
 
   function finish() {
+    setJob(revealedJob.id)
     updateSettings({
       adventurerName: name.trim() || '名もなき冒険者',
       interests,
@@ -131,6 +135,52 @@ export function OnboardingModal() {
               <button
                 type="button"
                 onClick={() => setStep(1)}
+                className="rounded-lg border border-white/15 px-4 py-2.5 text-sm text-white/60 hover:border-white/30"
+              >
+                戻る
+              </button>
+              <button
+                type="button"
+                onClick={() => setStep(3)}
+                className="flex-1 rounded-lg border border-[var(--color-gold-500)]/60 bg-[var(--color-gold-500)]/15 px-4 py-2.5 text-sm font-semibold text-[var(--color-gold-300)] transition hover:bg-[var(--color-gold-500)]/30"
+              >
+                次へ
+              </button>
+            </div>
+          </div>
+        )}
+
+        {step === 3 && (
+          <div className="flex flex-col gap-4">
+            <p className="text-center text-xs tracking-widest text-[var(--color-mana-400)]">
+              運命のジョブ判定...
+            </p>
+            <div className="rpg-panel animate-rise flex flex-col items-center gap-2 p-6">
+              <span className="animate-pulse-glow flex h-20 w-20 items-center justify-center rounded-full border-2 border-[var(--color-gold-500)] text-4xl">
+                {revealedJob.emblem}
+              </span>
+              {revealedJob.rarity === 'rare' && (
+                <span className="rounded-full border border-[var(--color-gold-500)]/60 px-2 py-0.5 text-[10px] text-[var(--color-gold-400)]">
+                  ユニークジョブ
+                </span>
+              )}
+              <h2 className="font-display glow-gold text-xl font-bold text-[var(--color-gold-300)]">
+                {revealedJob.name}
+              </h2>
+              <p className="text-center text-sm text-white/60">{revealedJob.description}</p>
+              <p className="text-xs text-white/40">
+                得意分野:{' '}
+                {revealedJob.affinities.map((c) => CATEGORIES[c].label).join('・')}
+                (対応クエストの報酬+{Math.round(20)}%)
+              </p>
+            </div>
+            <p className="text-xs text-white/40">
+              ジョブはあとから設定画面でいつでも変更できます。
+            </p>
+            <div className="mt-2 flex gap-2">
+              <button
+                type="button"
+                onClick={() => setStep(2)}
                 className="rounded-lg border border-white/15 px-4 py-2.5 text-sm text-white/60 hover:border-white/30"
               >
                 戻る

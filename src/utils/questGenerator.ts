@@ -45,8 +45,11 @@ export function generateDailyQuests(
   settings: PersonalizeSettings,
   count: number,
   recentTemplateIds: Set<string>,
+  ownedItems: Set<string> = new Set(),
 ): QuestInstance[] {
-  const dailyPool = QUEST_TEMPLATES.filter((t) => t.kind === 'daily')
+  const dailyPool = QUEST_TEMPLATES.filter(
+    (t) => t.kind === 'daily' && (!t.requiredItem || ownedItems.has(t.requiredItem)),
+  )
   const categories =
     settings.interests.length > 0 ? settings.interests : CATEGORY_LIST.map((c) => c.key)
   const cycle = shuffle(categories)

@@ -1,21 +1,27 @@
-import type { QuestInstance } from '../types'
+import type { JobInfo, QuestInstance } from '../types'
 import { RankBadge } from './RankBadge'
 import { CATEGORIES } from '../data/categories'
 import { INTENSITY_LABEL } from '../utils/xp'
+import { applyJobBonus } from '../utils/job'
 
 export function QuestCard({
   quest,
+  job,
   onComplete,
   onReroll,
   onRemove,
 }: {
   quest: QuestInstance
+  job?: JobInfo
   onComplete?: (id: string) => void
   onReroll?: (id: string) => void
   onRemove?: (id: string) => void
 }) {
   const cat = CATEGORIES[quest.category]
   const isDone = quest.status === 'completed'
+  const reward = job
+    ? applyJobBonus({ xp: quest.xpReward, stat: quest.statReward }, quest.category, job)
+    : { xp: quest.xpReward, stat: quest.statReward, bonusApplied: false }
 
   return (
     <div
@@ -54,10 +60,13 @@ export function QuestCard({
         <p className="mt-0.5 text-sm text-white/55">{quest.description}</p>
         <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 font-num text-xs text-white/50">
           <span>目安 {quest.estMinutes > 0 ? `${quest.estMinutes}分` : '随時'}</span>
-          <span className="text-[var(--color-mana-400)]">+{quest.xpReward} EXP</span>
+          <span className="text-[var(--color-mana-400)]">+{reward.xp} EXP</span>
           <span style={{ color: cat.color }}>
-            +{quest.statReward} {cat.short}
+            +{reward.stat} {cat.short}
           </span>
+          {reward.bonusApplied && (
+            <span className="text-[var(--color-gold-400)]">{job?.emblem} ジョブボーナス</span>
+          )}
         </div>
 
         {!isDone && (onComplete || onReroll || onRemove) && (

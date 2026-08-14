@@ -5,6 +5,7 @@ import { CustomQuestForm } from '../components/CustomQuestForm'
 import { Modal } from '../components/Modal'
 import { QUEST_TEMPLATES } from '../data/questTemplates'
 import { CATEGORIES } from '../data/categories'
+import { getJob } from '../data/jobs'
 import { RankBadge } from '../components/RankBadge'
 import { INTENSITY_LABEL, guildRankFromLevel, levelFromTotalXp } from '../utils/xp'
 import { useToast } from '../components/Toast'
@@ -18,6 +19,8 @@ export function QuestPage() {
   const removeActiveQuest = useStore((s) => s.removeActiveQuest)
   const acceptSpecialQuest = useStore((s) => s.acceptSpecialQuest)
   const abandonSpecialQuest = useStore((s) => s.abandonSpecialQuest)
+  const jobId = useStore((s) => s.character.jobId)
+  const job = getJob(jobId)
 
   const { pushToast } = useToast()
   const [showForm, setShowForm] = useState(false)
@@ -42,7 +45,13 @@ export function QuestPage() {
     const beforeRank = guildRankFromLevel(beforeLevel)
 
     completeQuest(id)
-    if (q) pushToast(`クエスト達成! ${q.title}`, `+${q.xpReward} EXP / +${q.statReward} ${q.category}`)
+    // Read back the just-created history entry so the toast reflects the
+    // actual credited amount (job-affinity bonus included), not the quest
+    // card's pre-bonus base reward.
+    const entry = useStore.getState().history[0]
+    if (q && entry) {
+      pushToast(`クエスト達成! ${q.title}`, `+${entry.xpGained} EXP / +${entry.statGained} ${q.category}`)
+    }
 
     const afterXp = useStore.getState().character.totalXp
     const afterLevel = levelFromTotalXp(afterXp).level
@@ -78,6 +87,7 @@ export function QuestPage() {
               <QuestCard
                 key={q.instanceId}
                 quest={q}
+                job={job}
                 onComplete={q.status === 'active' ? handleComplete : undefined}
                 onReroll={q.status === 'active' && !q.isCustom ? rerollDailyQuest : undefined}
                 onRemove={q.status === 'active' ? removeActiveQuest : undefined}
@@ -108,6 +118,7 @@ export function QuestPage() {
               <QuestCard
                 key={q.instanceId}
                 quest={q}
+                job={job}
                 onComplete={handleComplete}
                 onRemove={setAbandonTarget}
               />

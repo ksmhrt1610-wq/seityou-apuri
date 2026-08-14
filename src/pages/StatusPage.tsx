@@ -4,6 +4,7 @@ import { RankBadge } from '../components/RankBadge'
 import { ExpBar } from '../components/ExpBar'
 import { StatBarRow } from '../components/StatBarRow'
 import { CATEGORY_LIST } from '../data/categories'
+import { getJob } from '../data/jobs'
 import { dominantCategory, guildRankFromLevel, levelFromTotalXp, titleFromLevel } from '../utils/xp'
 
 export function StatusPage() {
@@ -15,6 +16,7 @@ export function StatusPage() {
   const levelInfo = useMemo(() => levelFromTotalXp(character.totalXp), [character.totalXp])
   const rank = guildRankFromLevel(levelInfo.level)
   const title = titleFromLevel(levelInfo.level)
+  const job = getJob(character.jobId)
   const dominant = dominantCategory(character.stats)
   const dominantInfo = dominant ? CATEGORY_LIST.find((c) => c.key === dominant) : null
 
@@ -36,12 +38,16 @@ export function StatusPage() {
             <h1 className="font-display glow-gold truncate text-2xl font-bold text-[var(--color-gold-300)] sm:text-3xl">
               {settings.adventurerName || '名もなき冒険者'}
             </h1>
-            {dominantInfo && (
-              <p className="mt-0.5 text-xs text-white/50">
-                得意分野・
-                <span style={{ color: dominantInfo.color }}>{dominantInfo.label}</span>
-              </p>
-            )}
+            <p className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-xs text-white/50">
+              <span>
+                {job.emblem} {job.name}
+              </span>
+              {dominantInfo && (
+                <span>
+                  得意分野・<span style={{ color: dominantInfo.color }}>{dominantInfo.label}</span>
+                </span>
+              )}
+            </p>
           </div>
           <div className="text-right">
             <p className="text-xs text-white/50">LEVEL</p>
