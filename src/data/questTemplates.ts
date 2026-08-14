@@ -122,6 +122,24 @@ export const QUEST_TEMPLATES: QuestTemplate[] = [
   { id: 'job-priest', kind: 'daily', category: 'WIL', rank: 'D', intensity: 'mid', title: '神官の内省の祈り', description: '静かに座り、今日の行いを振り返る祈りの時間を10分持つ。', estMinutes: 10, requiredJob: 'priest' },
   { id: 'job-bard', kind: 'daily', category: 'CHA', rank: 'D', intensity: 'mid', title: '吟遊詩人の語らい', description: '誰かと15分以上、心を込めて会話をする。', estMinutes: 15, requiredJob: 'bard' },
   { id: 'job-thief', kind: 'daily', category: 'DEX', rank: 'D', intensity: 'mid', title: '盗賊の手業磨き', description: '折り紙・パズル・裁縫など、指先を使う細かい作業を15分行う。', estMinutes: 15, requiredJob: 'thief' },
+
+  // ---- Tier2上位職(進化後)向け ----
+  { id: 'job-sword-saint', kind: 'daily', category: 'STR', rank: 'C', intensity: 'high', title: '剣聖の奥義稽古', description: '剣筋を極限まで研ぎ澄ませる型稽古を、集中を切らさず30分行う。', estMinutes: 30, requiredJob: 'sword-saint' },
+  { id: 'job-silver-knight', kind: 'daily', category: 'VIT', rank: 'C', intensity: 'high', title: '白銀騎士の重装鍛錬', description: '重りを背負っての歩行や階段昇降を、休まず30分続ける。', estMinutes: 30, requiredJob: 'silver-knight' },
+  { id: 'job-archmage', kind: 'daily', category: 'INT', rank: 'C', intensity: 'high', title: '大魔導士の深奥研究', description: '専門分野の難解な文献や論文を、集中して30分読み解く。', estMinutes: 30, requiredJob: 'archmage' },
+  { id: 'job-high-priest', kind: 'daily', category: 'WIL', rank: 'C', intensity: 'mid', title: '大神官の瞑想修行', description: '雑念を払い、静寂の中で20分間の深い瞑想を行う。', estMinutes: 20, requiredJob: 'high-priest' },
+  { id: 'job-legendary-bard', kind: 'daily', category: 'CHA', rank: 'C', intensity: 'mid', title: '伝説の吟遊詩人の語り', description: '人前で話す・発表する・演奏するなど、人に何かを届ける行為を20分行う。', estMinutes: 20, requiredJob: 'legendary-bard' },
+  { id: 'job-phantom-thief', kind: 'daily', category: 'DEX', rank: 'C', intensity: 'mid', title: '怪盗の神業稽古', description: '指先の精密さと速さを競う細かい作業を、ミスなく20分続ける。', estMinutes: 20, requiredJob: 'phantom-thief' },
+
+  // ---- ユニークジョブ向け(2つの得意分野それぞれに用意) ----
+  { id: 'job-sage-int', kind: 'daily', category: 'INT', rank: 'C', intensity: 'high', title: '賢者の深奥探究', description: '専門分野の知識を、静かに集中して30分掘り下げる。', estMinutes: 30, requiredJob: 'sage' },
+  { id: 'job-sage-wil', kind: 'daily', category: 'WIL', rank: 'C', intensity: 'mid', title: '賢者の静想', description: '深い静寂の中で20分間、内省と瞑想を行う。', estMinutes: 20, requiredJob: 'sage' },
+  { id: 'job-dragoon-str', kind: 'daily', category: 'STR', rank: 'C', intensity: 'high', title: '竜騎士の猛稽古', description: '全力での有酸素運動と補強トレーニングを、合わせて30分行う。', estMinutes: 30, requiredJob: 'dragoon' },
+  { id: 'job-dragoon-vit', kind: 'daily', category: 'VIT', rank: 'C', intensity: 'mid', title: '竜騎士の体調管理', description: '7時間睡眠・3食の栄養バランスなど、戦い抜ける身体づくりを1日通して整える。', estMinutes: 0, requiredJob: 'dragoon' },
+  { id: 'job-paladin-str', kind: 'daily', category: 'STR', rank: 'C', intensity: 'high', title: '聖騎士の鍛錬', description: '剣術の型稽古と体幹トレーニングを合わせて25分行う。', estMinutes: 25, requiredJob: 'paladin' },
+  { id: 'job-paladin-wil', kind: 'daily', category: 'WIL', rank: 'C', intensity: 'mid', title: '聖騎士の祈り', description: '信念を新たにするための祈りと内省の時間を15分持つ。', estMinutes: 15, requiredJob: 'paladin' },
+  { id: 'job-alchemist-int', kind: 'daily', category: 'INT', rank: 'C', intensity: 'mid', title: '錬金術師の調合研究', description: '新しい知識や技術を、実践を交えながら20分学ぶ。', estMinutes: 20, requiredJob: 'alchemist' },
+  { id: 'job-alchemist-dex', kind: 'daily', category: 'DEX', rank: 'C', intensity: 'mid', title: '錬金術師の精密作業', description: '手先を使う精密な作業や創作活動を20分行う。', estMinutes: 20, requiredJob: 'alchemist' },
 ]
 
 export function templatesByKind(kind: QuestTemplate['kind']): QuestTemplate[] {
