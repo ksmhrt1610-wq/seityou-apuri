@@ -25,6 +25,8 @@ export interface QuestTemplate {
   estMinutes: number
   /** Item id (see data/items.ts). If set, this quest only appears when the player owns the item. */
   requiredItem?: string
+  /** Job id (see data/jobs.ts). If set, this quest only appears for players currently in that job. */
+  requiredJob?: string
 }
 
 export type QuestStatus = 'active' | 'completed' | 'abandoned'
@@ -88,9 +90,13 @@ export interface JobInfo {
   name: string
   emblem: string
   rarity: JobRarity
+  /** 1 = starting job, assigned at onboarding. 2 = advanced/unique, reached only via evolution. */
+  tier: 1 | 2
   /** Categories this job is good at; quests in these categories earn a reward bonus. */
   affinities: Category[]
   description: string
+  /** Tier-1 only: the id of the non-unique advanced job this naturally evolves into. */
+  advancesTo?: string
 }
 
 export interface ItemInfo {

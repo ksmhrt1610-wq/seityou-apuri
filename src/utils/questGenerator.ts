@@ -33,6 +33,14 @@ export function instantiateTemplate(template: QuestTemplate, isCustom = false): 
   }
 }
 
+export interface GenerateDailyQuestsOptions {
+  recentTemplateIds?: Set<string>
+  ownedItems?: Set<string>
+  jobId?: string
+  /** Template ids to leave out entirely, e.g. ones already pinned as resident quests today. */
+  excludeTemplateIds?: Set<string>
+}
+
 /**
  * Picks daily quests, round-robining across the player's interest
  * categories (or all categories, if none chosen) so a multi-interest
@@ -44,11 +52,21 @@ export function instantiateTemplate(template: QuestTemplate, isCustom = false): 
 export function generateDailyQuests(
   settings: PersonalizeSettings,
   count: number,
-  recentTemplateIds: Set<string>,
-  ownedItems: Set<string> = new Set(),
+  options: GenerateDailyQuestsOptions = {},
 ): QuestInstance[] {
+  const {
+    recentTemplateIds = new Set<string>(),
+    ownedItems = new Set<string>(),
+    jobId,
+    excludeTemplateIds = new Set<string>(),
+  } = options
+
   const dailyPool = QUEST_TEMPLATES.filter(
-    (t) => t.kind === 'daily' && (!t.requiredItem || ownedItems.has(t.requiredItem)),
+    (t) =>
+      t.kind === 'daily' &&
+      !excludeTemplateIds.has(t.id) &&
+      (!t.requiredItem || ownedItems.has(t.requiredItem)) &&
+      (!t.requiredJob || t.requiredJob === jobId),
   )
   const categories =
     settings.interests.length > 0 ? settings.interests : CATEGORY_LIST.map((c) => c.key)

@@ -22,6 +22,7 @@ export const QUEST_TEMPLATES: QuestTemplate[] = [
   { id: 'str-h1', kind: 'daily', category: 'STR', rank: 'B', intensity: 'high', title: 'ジムで本格トレーニング45分', description: 'ベンチプレス・スクワット・デッドリフトなど主要種目を各3セット、合計45分以上行う。', estMinutes: 45 },
   { id: 'str-h2', kind: 'daily', category: 'STR', rank: 'B', intensity: 'high', title: '5kmを走り切る', description: 'ペースは気にせず、5kmという距離を走りきる。', estMinutes: 35 },
   { id: 'str-h3', kind: 'daily', category: 'STR', rank: 'C', intensity: 'high', title: 'タバタ式HIIT20分', description: '20秒全力運動+10秒休憩を1セットとして、8種目×3セット(合計20分)行う。', estMinutes: 20 },
+  { id: 'str-item-wsword', kind: 'daily', category: 'STR', rank: 'D', intensity: 'mid', title: '木刀の素振り100本', description: '木刀や訓練用武具で、正しいフォームを意識しながら素振りを100本行う。', estMinutes: 15, requiredItem: 'wooden-sword' },
   { id: 'str-item-dumbbell', kind: 'daily', category: 'STR', rank: 'D', intensity: 'mid', title: 'ダンベルトレーニング', description: 'ダンベルカール10回×3セット、ショルダープレス10回×3セット。', estMinutes: 15, requiredItem: 'dumbbell' },
   { id: 'str-item-abroller', kind: 'daily', category: 'STR', rank: 'D', intensity: 'mid', title: '腹筋ローラー(膝つき)', description: '膝をついた姿勢で腹筋ローラーを10回×3セット行う。', estMinutes: 10, requiredItem: 'ab-roller' },
   { id: 'str-item-band', kind: 'daily', category: 'STR', rank: 'D', intensity: 'mid', title: 'チューブトレーニング', description: '筋トレチューブでスクワット15回×3セット、ヒップリフト15回×3セット。', estMinutes: 15, requiredItem: 'resistance-band' },
@@ -113,6 +114,14 @@ export const QUEST_TEMPLATES: QuestTemplate[] = [
   { id: 'dex-sp1', kind: 'special', category: 'DEX', rank: 'A', intensity: 'mid', title: '1週間、部屋を整える習慣化', description: '7日間、毎日少しずつ部屋を整える。', estMinutes: 10 },
   { id: 'dex-sp2', kind: 'special', category: 'DEX', rank: 'S', intensity: 'high', title: '30日で新しいスキルを習得する', description: '30日間かけて、新しいスキルを実用レベルまで身につける。', estMinutes: 30 },
   { id: 'dex-sp3', kind: 'special', category: 'DEX', rank: 'A', intensity: 'mid', title: 'ポートフォリオを1つ完成させる', description: '自分の作品・実績をまとめた成果物を完成させる。', estMinutes: 90 },
+
+  // ---------------- ジョブ特有クエスト(現在のジョブの場合のみ出題) ----------------
+  { id: 'job-swordsman', kind: 'daily', category: 'STR', rank: 'D', intensity: 'mid', title: '剣士の型稽古', description: '素振りや型稽古を15分行う。木刀や訓練用武具があれば使うとよい。', estMinutes: 15, requiredJob: 'swordsman' },
+  { id: 'job-guardian', kind: 'daily', category: 'VIT', rank: 'D', intensity: 'mid', title: '守護騎士の鍛錬', description: '重りを背負っての歩行や階段昇降など、粘り強さを鍛える運動を15分行う。', estMinutes: 15, requiredJob: 'guardian' },
+  { id: 'job-mage', kind: 'daily', category: 'INT', rank: 'D', intensity: 'mid', title: '魔道士の書物研究', description: '興味のある分野の専門書や論文を20分読み込む。', estMinutes: 20, requiredJob: 'mage' },
+  { id: 'job-priest', kind: 'daily', category: 'WIL', rank: 'D', intensity: 'mid', title: '神官の内省の祈り', description: '静かに座り、今日の行いを振り返る祈りの時間を10分持つ。', estMinutes: 10, requiredJob: 'priest' },
+  { id: 'job-bard', kind: 'daily', category: 'CHA', rank: 'D', intensity: 'mid', title: '吟遊詩人の語らい', description: '誰かと15分以上、心を込めて会話をする。', estMinutes: 15, requiredJob: 'bard' },
+  { id: 'job-thief', kind: 'daily', category: 'DEX', rank: 'D', intensity: 'mid', title: '盗賊の手業磨き', description: '折り紙・パズル・裁縫など、指先を使う細かい作業を15分行う。', estMinutes: 15, requiredJob: 'thief' },
 ]
 
 export function templatesByKind(kind: QuestTemplate['kind']): QuestTemplate[] {

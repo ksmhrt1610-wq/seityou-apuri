@@ -27,6 +27,7 @@ export function QuestPage() {
   const [showCatalog, setShowCatalog] = useState(false)
   const [abandonTarget, setAbandonTarget] = useState<string | null>(null)
 
+  const residentQuests = board.residentQuestIds.map((id) => quests[id]).filter(Boolean)
   const dailyQuests = board.dailyQuestIds.map((id) => quests[id]).filter(Boolean)
   const activeSpecial = specialActiveIds.map((id) => quests[id]).filter(Boolean)
 
@@ -66,9 +67,33 @@ export function QuestPage() {
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6 pb-8">
+      {residentQuests.length > 0 && (
+        <section>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="font-display section-title text-base font-bold text-white/85">
+              常駐クエスト
+              <span className="ml-2 text-xs font-normal text-white/40">毎日必ず出題される固定の務め</span>
+            </h2>
+          </div>
+          <div className="flex flex-col gap-3">
+            {residentQuests.map((q) => (
+              <QuestCard
+                key={q.instanceId}
+                quest={q}
+                job={job}
+                onComplete={q.status === 'active' ? handleComplete : undefined}
+              />
+            ))}
+          </div>
+        </section>
+      )}
+
       <section>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-display text-base font-bold text-white/85">今日のクエスト</h2>
+          <h2 className="font-display section-title text-base font-bold text-white/85">
+            今日のランダムクエスト
+            <span className="ml-2 text-xs font-normal text-white/40">自動で出題される日課</span>
+          </h2>
           <button
             type="button"
             onClick={() => setShowForm(true)}
@@ -99,8 +124,8 @@ export function QuestPage() {
 
       <section>
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="font-display text-base font-bold text-white/85">
-            特別クエスト
+          <h2 className="font-display section-title text-base font-bold text-white/85">
+            受注可能クエスト
             <span className="ml-2 text-xs font-normal text-white/40">腰を据えて取り組む大きな目標</span>
           </h2>
           <button
@@ -127,7 +152,7 @@ export function QuestPage() {
         )}
         {activeSpecial.length === 0 && !showCatalog && (
           <p className="rpg-panel p-5 text-sm text-white/50">
-            まだ受注中の特別クエストはありません。腰を据えた挑戦をしたくなったら受注してみましょう。
+            まだ受注中のクエストはありません。腰を据えた挑戦をしたくなったら、一覧から受注してみましょう。
           </p>
         )}
 
@@ -168,9 +193,9 @@ export function QuestPage() {
       {showForm && <CustomQuestForm onClose={() => setShowForm(false)} />}
 
       {abandonTarget && (
-        <Modal title="特別クエストを取り下げますか?" onClose={() => setAbandonTarget(null)}>
+        <Modal title="受注可能クエストを取り下げますか?" onClose={() => setAbandonTarget(null)}>
           <p className="mb-4 text-sm text-white/60">
-            「{quests[abandonTarget]?.title}」を取り下げます。ここまでの取り組みは記録に残らず、クエストは受注一覧に戻ります。
+            「{quests[abandonTarget]?.title}」を取り下げます。ここまでの取り組みは記録に残らず、いつでも一覧から選び直せます。
           </p>
           <div className="flex justify-end gap-2">
             <button

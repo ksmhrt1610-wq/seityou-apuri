@@ -26,7 +26,7 @@ export function LogPage() {
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-5 pb-8">
       <div className="rpg-panel p-5 sm:p-6">
-        <h2 className="font-display mb-3 text-sm font-semibold tracking-wide text-white/70">これまでの記録</h2>
+        <h2 className="font-display section-title mb-3 text-sm font-semibold tracking-wide text-white/70">これまでの記録</h2>
         <div className="grid grid-cols-3 gap-3 text-center">
           <div>
             <p className="font-num text-2xl font-bold text-[var(--color-gold-300)]">{history.length}</p>
@@ -44,12 +44,12 @@ export function LogPage() {
       </div>
 
       <div className="rpg-panel p-5 sm:p-6">
-        <h2 className="font-display mb-3 text-sm font-semibold tracking-wide text-white/70">分野別の達成傾向</h2>
+        <h2 className="font-display section-title mb-3 text-sm font-semibold tracking-wide text-white/70">分野別の達成傾向</h2>
         <CategoryBarChart history={history} />
       </div>
 
       <div>
-        <h2 className="font-display mb-3 text-sm font-semibold tracking-wide text-white/70">冒険の書</h2>
+        <h2 className="font-display section-title mb-3 text-sm font-semibold tracking-wide text-white/70">冒険の書</h2>
         {grouped.length === 0 && (
           <p className="rpg-panel p-5 text-sm text-white/50">
             まだ記録はありません。クエストを達成すると、ここに刻まれていきます。

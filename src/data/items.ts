@@ -2,6 +2,7 @@ import type { ItemInfo } from '../types'
 
 export const ITEMS: ItemInfo[] = [
   // STR
+  { id: 'wooden-sword', label: '木刀・訓練用武具', icon: '⚔️', category: 'STR' },
   { id: 'dumbbell', label: 'ダンベル', icon: '🏋️', category: 'STR' },
   { id: 'ab-roller', label: '腹筋ローラー', icon: '🛞', category: 'STR' },
   { id: 'resistance-band', label: '筋トレチューブ', icon: '➰', category: 'STR' },

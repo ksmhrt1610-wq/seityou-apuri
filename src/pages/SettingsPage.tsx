@@ -2,11 +2,14 @@ import { useRef, useState } from 'react'
 import { useStore } from '../state/store'
 import { CATEGORY_LIST, CATEGORIES } from '../data/categories'
 import { ITEMS } from '../data/items'
-import { getJob } from '../data/jobs'
-import type { Category, Intensity } from '../types'
-import { INTENSITY_LABEL } from '../utils/xp'
+import { getJob, EVOLUTION_LEVEL } from '../data/jobs'
+import type { Category, Intensity, JobInfo } from '../types'
+import { INTENSITY_LABEL, levelFromTotalXp } from '../utils/xp'
 import { Modal } from '../components/Modal'
 import { JobChangeModal } from '../components/JobChangeModal'
+import { JobEvolutionModal } from '../components/JobEvolutionModal'
+import { ResidentQuestPickerModal } from '../components/ResidentQuestPickerModal'
+import { QUEST_TEMPLATES } from '../data/questTemplates'
 import { useToast } from '../components/Toast'
 
 const INTENSITIES: Intensity[] = ['low', 'mid', 'high']
@@ -18,15 +21,23 @@ export function SettingsPage() {
   const exportData = useStore((s) => s.exportData)
   const importData = useStore((s) => s.importData)
   const jobId = useStore((s) => s.character.jobId)
+  const totalXp = useStore((s) => s.character.totalXp)
+  const evolveCurrentJob = useStore((s) => s.evolveCurrentJob)
   const inventory = useStore((s) => s.inventory)
   const addItem = useStore((s) => s.addItem)
   const removeItem = useStore((s) => s.removeItem)
+  const residentTemplateIds = useStore((s) => s.residentTemplateIds)
+  const unpinResidentQuest = useStore((s) => s.unpinResidentQuest)
   const [confirmReset, setConfirmReset] = useState(false)
   const [nameDraft, setNameDraft] = useState(settings.adventurerName)
   const [showJobModal, setShowJobModal] = useState(false)
+  const [evolutionResult, setEvolutionResult] = useState<JobInfo | null>(null)
+  const [showResidentPicker, setShowResidentPicker] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { pushToast } = useToast()
   const job = getJob(jobId)
+  const level = levelFromTotalXp(totalXp).level
+  const canChangeJob = level >= EVOLUTION_LEVEL
 
   function toggleItem(itemId: string) {
     if (inventory.includes(itemId)) removeItem(itemId)
@@ -71,7 +82,7 @@ export function SettingsPage() {
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-5 pb-8">
       <div className="rpg-panel p-5 sm:p-6">
-        <h2 className="font-display mb-3 text-sm font-semibold tracking-wide text-white/70">冒険者名</h2>
+        <h2 className="font-display section-title mb-3 text-sm font-semibold tracking-wide text-white/70">冒険者名</h2>
         <div className="flex gap-2">
           <input
             value={nameDraft}
@@ -84,7 +95,7 @@ export function SettingsPage() {
       </div>
 
       <div className="rpg-panel p-5 sm:p-6">
-        <h2 className="font-display mb-3 text-sm font-semibold tracking-wide text-white/70">ジョブ</h2>
+        <h2 className="font-display section-title mb-3 text-sm font-semibold tracking-wide text-white/70">ジョブ</h2>
         <div className="flex items-center gap-3">
           <span className="text-3xl">{job.emblem}</span>
           <div className="min-w-0 flex-1">
@@ -98,21 +109,40 @@ export function SettingsPage() {
             </div>
             <p className="text-xs text-white/50">{job.description}</p>
             <p className="mt-0.5 text-[11px] text-white/40">
-              得意: {job.affinities.map((c) => CATEGORIES[c].label).join('・')}(報酬+20%)
+              得意: {job.affinities.map((c) => CATEGORIES[c].label).join('・')}
+              (報酬+{job.tier === 2 ? 35 : 20}%)
             </p>
           </div>
-          <button
-            type="button"
-            onClick={() => setShowJobModal(true)}
-            className="shrink-0 rounded-lg border border-white/15 px-3 py-1.5 text-xs text-white/60 transition hover:border-white/30 hover:text-white/90"
-          >
-            ジョブチェンジ
-          </button>
         </div>
+
+        {canChangeJob ? (
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setShowJobModal(true)}
+              className="rounded-lg border border-white/15 px-3 py-1.5 text-xs text-white/60 transition hover:border-white/30 hover:text-white/90"
+            >
+              ジョブチェンジ
+            </button>
+            {job.tier === 1 && (
+              <button
+                type="button"
+                onClick={() => setEvolutionResult(evolveCurrentJob())}
+                className="rounded-lg border border-[var(--color-gold-500)]/60 bg-[var(--color-gold-500)]/15 px-3 py-1.5 text-xs font-semibold text-[var(--color-gold-300)] transition hover:bg-[var(--color-gold-500)]/30"
+              >
+                進化する
+              </button>
+            )}
+          </div>
+        ) : (
+          <p className="mt-4 text-[11px] text-white/40">
+            Lv.{EVOLUTION_LEVEL}になるとジョブチェンジ・進化が可能になります(現在 Lv.{level})
+          </p>
+        )}
       </div>
 
       <div className="rpg-panel p-5 sm:p-6">
-        <h2 className="font-display mb-1 text-sm font-semibold tracking-wide text-white/70">得意にしたい分野</h2>
+        <h2 className="font-display section-title mb-1 text-sm font-semibold tracking-wide text-white/70">得意にしたい分野</h2>
         <p className="mb-3 text-xs text-white/45">
           選んだ分野を中心にクエストが出題されます。何も選ばなければ全分野からバランスよく出題します。
         </p>
@@ -139,7 +169,7 @@ export function SettingsPage() {
       </div>
 
       <div className="rpg-panel p-5 sm:p-6">
-        <h2 className="font-display mb-1 text-sm font-semibold tracking-wide text-white/70">持っているアイテム</h2>
+        <h2 className="font-display section-title mb-1 text-sm font-semibold tracking-wide text-white/70">持っているアイテム</h2>
         <p className="mb-3 text-xs text-white/45">
           持っているものを選ぶと、それを使う専用クエストが出題されるようになります。何も選ばなくても通常のクエストは出題されます。
         </p>
@@ -179,7 +209,45 @@ export function SettingsPage() {
       </div>
 
       <div className="rpg-panel p-5 sm:p-6">
-        <h2 className="font-display mb-1 text-sm font-semibold tracking-wide text-white/70">クエストの強度</h2>
+        <div className="mb-1 flex items-center justify-between">
+          <h2 className="font-display section-title text-sm font-semibold tracking-wide text-white/70">常駐クエスト</h2>
+          <button
+            type="button"
+            onClick={() => setShowResidentPicker(true)}
+            className="rounded-lg border border-white/15 px-3 py-1.5 text-xs text-white/60 transition hover:border-white/30 hover:text-white/90"
+          >
+            + 選ぶ
+          </button>
+        </div>
+        <p className="mb-3 text-xs text-white/45">
+          毎日欠かさずやると決めたことを固定できます。抽選には左右されず、常に「今日のクエスト」に並びます。
+        </p>
+        {residentTemplateIds.length === 0 ? (
+          <p className="text-xs text-white/40">まだ何も固定していません。</p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {residentTemplateIds.map((templateId) => {
+              const t = QUEST_TEMPLATES.find((q) => q.id === templateId)
+              if (!t) return null
+              return (
+                <div key={templateId} className="flex items-center justify-between rounded-lg border border-white/10 bg-black/20 px-3 py-2">
+                  <span className="text-sm text-white/80">{t.title}</span>
+                  <button
+                    type="button"
+                    onClick={() => unpinResidentQuest(templateId)}
+                    className="text-xs text-white/40 transition hover:text-[var(--color-ember-500)]"
+                  >
+                    固定解除
+                  </button>
+                </div>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      <div className="rpg-panel p-5 sm:p-6">
+        <h2 className="font-display section-title mb-1 text-sm font-semibold tracking-wide text-white/70">クエストの強度</h2>
         <p className="mb-3 text-xs text-white/45">高いほど負荷は上がりますが、獲得できる経験値・ステータスも増えます。</p>
         <div className="grid grid-cols-3 gap-2">
           {INTENSITIES.map((i) => (
@@ -200,7 +268,7 @@ export function SettingsPage() {
       </div>
 
       <div className="rpg-panel p-5 sm:p-6">
-        <h2 className="font-display mb-1 text-sm font-semibold tracking-wide text-white/70">
+        <h2 className="font-display section-title mb-1 text-sm font-semibold tracking-wide text-white/70">
           1日のクエスト数・{settings.dailyQuestCount}件
         </h2>
         <p className="mb-3 text-xs text-white/45">無理のない数から始めて、慣れてきたら増やしましょう。</p>
@@ -215,7 +283,7 @@ export function SettingsPage() {
       </div>
 
       <div className="rpg-panel p-5 sm:p-6">
-        <h2 className="font-display mb-1 text-sm font-semibold tracking-wide text-white/70">データのバックアップ</h2>
+        <h2 className="font-display section-title mb-1 text-sm font-semibold tracking-wide text-white/70">データのバックアップ</h2>
         <p className="mb-3 text-xs text-white/45">
           冒険の記録はこの端末のブラウザにのみ保存されています。機種変更やブラウザデータの消去に備えて、
           定期的にバックアップファイルを保存しておくことをおすすめします。
@@ -250,7 +318,7 @@ export function SettingsPage() {
       </div>
 
       <div className="rpg-panel border-[var(--color-ember-600)]/40 p-5 sm:p-6">
-        <h2 className="font-display mb-1 text-sm font-semibold tracking-wide text-[var(--color-ember-400)]">
+        <h2 className="font-display section-title mb-1 text-sm font-semibold tracking-wide text-[var(--color-ember-400)]">
           データのリセット
         </h2>
         <p className="mb-3 text-xs text-white/45">
@@ -266,6 +334,12 @@ export function SettingsPage() {
       </div>
 
       {showJobModal && <JobChangeModal onClose={() => setShowJobModal(false)} />}
+      {showResidentPicker && (
+        <ResidentQuestPickerModal onClose={() => setShowResidentPicker(false)} />
+      )}
+      {evolutionResult && (
+        <JobEvolutionModal job={evolutionResult} onClose={() => setEvolutionResult(null)} />
+      )}
 
       {confirmReset && (
         <Modal title="本当にリセットしますか?" onClose={() => setConfirmReset(false)}>

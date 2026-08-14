@@ -80,7 +80,7 @@ export function StatusPage() {
       </div>
 
       <div className="rpg-panel animate-rise p-5 sm:p-6">
-        <h2 className="font-display mb-4 text-sm font-semibold tracking-wide text-white/70">ステータス</h2>
+        <h2 className="font-display section-title mb-4 text-sm font-semibold tracking-wide text-white/70">ステータス</h2>
         <div className="flex flex-col gap-3">
           {CATEGORY_LIST.map((info) => (
             <StatBarRow key={info.key} info={info} value={character.stats[info.key]} />
@@ -89,7 +89,7 @@ export function StatusPage() {
       </div>
 
       <div className="rpg-panel animate-rise p-5 sm:p-6">
-        <h2 className="font-display mb-2 text-sm font-semibold tracking-wide text-white/70">最長記録</h2>
+        <h2 className="font-display section-title mb-2 text-sm font-semibold tracking-wide text-white/70">最長記録</h2>
         <p className="text-sm text-white/60">
           最長連続達成日数は
           <span className="font-num mx-1 text-[var(--color-gold-400)]">{character.longestStreak}</span>

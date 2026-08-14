@@ -43,7 +43,7 @@ export function QuestCard({
           </span>
           {quest.kind === 'special' && (
             <span className="rounded-full border border-[var(--color-gold-500)]/50 px-2 py-0.5 text-[10px] text-[var(--color-gold-400)]">
-              特別クエスト
+              受注クエスト
             </span>
           )}
           {quest.isCustom && (

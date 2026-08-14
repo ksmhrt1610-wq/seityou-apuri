@@ -1,19 +1,24 @@
 import { Modal } from './Modal'
-import { JOBS } from '../data/jobs'
+import { JOBS, getJob } from '../data/jobs'
 import { CATEGORIES } from '../data/categories'
 import { useStore } from '../state/store'
 
 export function JobChangeModal({ onClose }: { onClose: () => void }) {
   const currentJobId = useStore((s) => s.character.jobId)
   const setJob = useStore((s) => s.setJob)
+  const currentJob = getJob(currentJobId)
+
+  // Only jobs of the player's current tier are selectable, and unique
+  // (rare) jobs are never offered here — those are earned only by evolving.
+  const options = JOBS.filter((j) => j.tier === currentJob.tier && j.rarity === 'common')
 
   return (
     <Modal title="ジョブチェンジ" onClose={onClose}>
       <p className="mb-4 text-sm text-white/60">
-        就きたいジョブを選んでください。得意分野に合ったクエストを達成すると、報酬が20%増えます。
+        就きたいジョブを選んでください。得意分野に合ったクエストの報酬が上がります。
       </p>
       <div className="flex flex-col gap-2">
-        {JOBS.map((job) => {
+        {options.map((job) => {
           const active = job.id === currentJobId
           return (
             <button
@@ -33,11 +38,6 @@ export function JobChangeModal({ onClose }: { onClose: () => void }) {
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5">
                   <span className="font-display text-sm font-semibold text-white/90">{job.name}</span>
-                  {job.rarity === 'rare' && (
-                    <span className="rounded-full border border-[var(--color-gold-500)]/50 px-1.5 py-0.5 text-[9px] text-[var(--color-gold-400)]">
-                      ユニーク
-                    </span>
-                  )}
                   {active && (
                     <span className="rounded-full border border-white/20 px-1.5 py-0.5 text-[9px] text-white/50">
                       現在のジョブ

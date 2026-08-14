@@ -40,10 +40,28 @@ html {
 
 body {
   margin: 0;
-  background: radial-gradient(ellipse at top, #131a33 0%, #05060f 55%, #030409 100%);
+  background:
+    radial-gradient(ellipse at top, #131a33 0%, #05060f 55%, #030409 100%);
   color: #e8e9f3;
   font-family: var(--font-sans-jp);
   min-height: 100vh;
+  position: relative;
+}
+
+/* Faint constellation / rune texture so the void behind the panels never
+   reads as flat empty space. Kept extremely low-opacity and tiled via a
+   small inline SVG so it costs nothing to load. */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0.5;
+  mix-blend-mode: screen;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220' viewBox='0 0 220 220'%3E%3Cg fill='none' stroke='%23e8b84b' stroke-width='0.6' opacity='0.35'%3E%3Ccircle cx='40' cy='40' r='2'/%3E%3Ccircle cx='180' cy='70' r='1.4'/%3E%3Ccircle cx='110' cy='160' r='1.8'/%3E%3Ccircle cx='30' cy='190' r='1.2'/%3E%3Ccircle cx='195' cy='190' r='2'/%3E%3Cpath d='M40 40 L110 160 M180 70 L110 160 M30 190 L110 160'/%3E%3Cpolygon points='110,25 116,38 130,38 119,47 123,61 110,53 97,61 101,47 90,38 104,38' opacity='0.5'/%3E%3C/g%3E%3C/svg%3E");
+  background-size: 420px 420px;
+  background-repeat: repeat;
 }
 
 * {
@@ -231,4 +249,35 @@ body {
 }
 .animate-toast {
   animation: toast-in 2.6s ease-out forwards;
+}
+
+/* --- fantasy ornamentation --- */
+.fantasy-divider {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: rgba(232, 184, 75, 0.55);
+  user-select: none;
+}
+.fantasy-divider::before,
+.fantasy-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(232, 184, 75, 0.45), transparent);
+}
+
+.section-title {
+  position: relative;
+  padding-left: 14px;
+}
+.section-title::before {
+  content: '◆';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.55em;
+  color: var(--color-gold-500);
+  text-shadow: 0 0 6px rgba(232, 184, 75, 0.6);
 }

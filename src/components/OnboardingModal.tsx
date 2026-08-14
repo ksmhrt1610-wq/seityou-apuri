@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useStore } from '../state/store'
 import { CATEGORY_LIST, CATEGORIES } from '../data/categories'
-import { pickRandomJob } from '../data/jobs'
+import { EVOLUTION_LEVEL, pickRandomJob } from '../data/jobs'
 import type { Category, Intensity } from '../types'
 import { INTENSITY_LABEL } from '../utils/xp'
 
@@ -171,11 +171,11 @@ export function OnboardingModal() {
               <p className="text-xs text-white/40">
                 得意分野:{' '}
                 {revealedJob.affinities.map((c) => CATEGORIES[c].label).join('・')}
-                (対応クエストの報酬+{Math.round(20)}%)
+                (対応クエストの報酬+{revealedJob.tier === 2 ? 35 : 20}%)
               </p>
             </div>
             <p className="text-xs text-white/40">
-              ジョブはあとから設定画面でいつでも変更できます。
+              レベル{EVOLUTION_LEVEL}に達すると、設定画面からジョブチェンジまたは上位職への進化が可能になります。
             </p>
             <div className="mt-2 flex gap-2">
               <button
