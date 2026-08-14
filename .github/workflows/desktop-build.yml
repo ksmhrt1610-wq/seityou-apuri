@@ -1,0 +1,36 @@
+name: Desktop app build & release
+
+# Builds the Electron desktop app for Windows and Linux and publishes the
+# resulting installers to a GitHub Release. Runs on real Windows/Linux
+# runners (not this dev sandbox), so the Windows build gets a proper NSIS
+# installer too (no wine workaround needed).
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            script: electron:build:linux
+          - os: windows-latest
+            script: electron:build:win
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and publish desktop app
+        run: npm run ${{ matrix.script }} -- --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -16,6 +16,9 @@ dist-standalone
 # vite-plugin-pwa generated files (regenerated on every build)
 dev-dist
 
+# Electron / electron-builder output (large binaries, rebuild locally)
+release
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

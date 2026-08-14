@@ -1,0 +1,58 @@
+name: iOS build check
+
+# Builds the Capacitor iOS project for the Simulator (no code signing
+# required) on a macOS runner, as a compile smoke test. A real on-device
+# / App Store build additionally needs a Mac with Xcode and an Apple ID
+# (or paid Apple Developer account) for code signing — that step can't be
+# fully automated here without the user's own signing credentials, so this
+# workflow stops at "does it build," and ships the .app for the Simulator
+# as a downloadable artifact.
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - claude/quest-growth-app-75inry
+    paths:
+      - 'src/**'
+      - 'ios/**'
+      - 'capacitor.config.ts'
+      - 'package.json'
+      - '.github/workflows/ios-build.yml'
+
+jobs:
+  build-ios-simulator:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build standalone web bundle
+        run: npm run build:standalone
+
+      - name: Sync Capacitor iOS project
+        run: npx cap sync ios
+
+      - name: Build for iOS Simulator (unsigned)
+        working-directory: ios/App
+        run: |
+          xcodebuild \
+            -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Upload .app for the Simulator
+        uses: actions/upload-artifact@v4
+        with:
+          name: seityou-apuri-ios-simulator
+          path: ios/App/build/Build/Products/Debug-iphonesimulator/App.app
+          if-no-files-found: error

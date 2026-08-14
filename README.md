@@ -38,12 +38,48 @@
 - フォントは自己ホスト(woff2, `@fontsource/*`)しており、外部ネットワークに一切依存しない
 - サーバー不要、完全クライアントサイド動作
 
-## 使い方(2つの配布形式)
+## 使い方(4つの配布形式)
 
-このアプリは「ダウンロードしてすぐ使う」「サーバーに置いてスマホ/PCにアプリとして
-インストールする」の両方に対応しています。
+利用シーンに応じて選べるよう、ブラウザ上で動くもの・ブラウザを介さないネイティブアプリの
+両方を用意しています。
 
-### 1. 単一HTMLファイル版(ダウンロードしてそのまま使う)
+### 1. デスクトップアプリ(Windows / Linux、ブラウザなしのネイティブアプリ)
+
+Electron でラップした、ブラウザのUIを一切持たない独立したデスクトップアプリです。
+アイコンをダブルクリックすればアプリとして起動し、ウィンドウ・タスクバー表示も
+普通のソフトと同じです。
+
+- **ビルド済みファイルは GitHub Releases から配布** しています(数百MBあるためリポジトリには
+  含めていません)。`.github/workflows/desktop-build.yml` を `workflow_dispatch` で実行すると、
+  Windows/Linux 双方のネイティブランナー上でビルド・公開されます。
+  - Windows: ポータブル版 `.exe`(インストール不要)、インストーラー版 `.exe`(NSIS)
+  - Linux: `.AppImage`(インストール不要、実行権限を付けて起動)
+- 自分でビルドする場合:
+
+```bash
+npm install
+npm run electron:build:linux   # release/*.AppImage
+npm run electron:build:win     # release/*.exe (このOS上ではwine未導入だとportableのみ生成)
+```
+
+### 2. iOSアプリ(iPhone、ブラウザなしのネイティブアプリ)
+
+Capacitor で `ios/` に Xcode プロジェクトを生成済みです。**iOSアプリのビルドには
+Apple の制約上 Mac + Xcode が必須**で、実機にインストールするには Apple ID
+(無料アカウントでも7日間の実機テストは可能、継続配布には有料の
+Apple Developer Program が必要)での署名が要ります。
+
+- Mac が使える場合: `ios/App/App.xcodeproj` (または `.xcworkspace`) を Xcode で開き、
+  Signing & Capabilities で自分の Apple ID を設定して実機に Run するだけで動きます
+  (CocoaPods不要、Swift Package Manager構成)。
+- `.github/workflows/ios-build.yml` で、macOS ランナー上でのビルド確認(シミュレータ向け、
+  署名なし)を自動化しています。実機・配布用ビルドは署名情報がこちら側にないため
+  自動化できません。
+- Mac がすぐに用意できない場合の代替として、Safari で本アプリを開き
+  「ホーム画面に追加」すると、ブラウザ枠のないアイコン起動・オフライン利用ができます
+  (PWAとしての利用。厳密なネイティブアプリではありませんが、実機での見た目・使用感は近いです)。
+
+### 3. 単一HTMLファイル版(ダウンロードしてそのまま使う・ブラウザで開く)
 
 `npm run build:standalone` で `dist-standalone/index.html` という
 **JS・CSS・フォント・アイコンをすべて内包した1ファイル(約10MB)** が生成されます。
@@ -53,14 +89,12 @@
 - 記録はブラウザの localStorage にこのファイル単位で保存されます。
   ファイルを移動・複製すると記録が引き継がれない場合があるため、
   保存場所を変えないか、設定画面の「エクスポート」でバックアップしてください。
-- スマホでも、ファイルをブラウザで開ける形で転送すれば同様に動作します
-  (メールに添付する、クラウドストレージ経由で開く、など)。
 
 ```bash
 npm run build:standalone
 ```
 
-### 2. Web版(ホスティングしてPWAとしてインストール)
+### 4. Web版(ホスティングしてPWAとしてインストール)
 
 `npm run build` で生成される `dist/` を Web サーバー(GitHub Pages, Netlify, Vercel など)
 に置くと、通常のWebアプリとして使えるだけでなく、
@@ -100,3 +134,7 @@ src/
 - Google Fonts CDN依存を排除し、フォントを自己ホスト化(外部通信ゼロで完全オフライン動作)。
 - サーバー不要でダウンロードしてすぐ使える単一HTML版と、PWAとしてデスクトップ/スマホに
   インストールできるWeb版の両方を用意し、利用シーンに応じて選べるようにした。
+- 「ブラウザ上で動くアプリ」に留まらないよう、Electron によるWindows/Linux向け
+  ネイティブデスクトップアプリと、Capacitor によるiOSプロジェクトを追加。
+  iOSの実機ビルドにはMac+Xcode+Apple IDが必須というApple側の制約は
+  回避できないため、README に正直に明記した。
