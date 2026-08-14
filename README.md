@@ -5,6 +5,24 @@
 やることは「与えられたクエストをこなすだけ」。派手な機能で気を散らすのではなく、
 **行動を積み重ねた記録が消えずに残ること** を軸に設計しています。
 
+## 現在のテスト運用方法(私的利用・非公開)
+
+このアプリはインターネット上に公開せず、**手元のPCでローカルサーバーを起動して使う**運用にしています。
+
+```bash
+git clone https://github.com/ksmhrt1610-wq/seityou-apuri.git
+cd seityou-apuri
+git checkout claude/quest-growth-app-75inry
+npm install
+npm run dev
+```
+
+ブラウザで `http://localhost:5173` を開くと使えます。`localhost` なのでネットワークの外からはアクセスできず、完全に非公開です。
+
+- 記録を消さずに継続したい場合は、毎回同じ手順(同じフォルダ)で起動してください(localStorageはブラウザ・オリジン単位で保存されます)。
+- 本番相当のビルドで試したい場合は `npm run build && npm run preview` でも同様に `localhost` 上で動作します(PWAのインストール確認もできます)。
+- コードを更新した場合は `git pull` してから `npm run dev` を再実行してください。
+
 ## コンセプト
 
 - クエストをこなす → 経験値・ステータスが上がる → レベル/ギルドランクが上がる、という
@@ -94,7 +112,10 @@ Apple Developer Program が必要)での署名が要ります。
 npm run build:standalone
 ```
 
-### 4. Web版(ホスティングしてPWAとしてインストール)
+### 4. Web版(ホスティングしてPWAとしてインストール)※現在は未使用・非公開運用中
+
+現在は上記の「ローカルサーバーで起動」を使っており、インターネット上への公開はしていません。
+将来的に公開したくなった場合の選択肢として記録だけ残しておきます。
 
 `npm run build` で生成される `dist/` を Web サーバー(GitHub Pages, Netlify, Vercel など)
 に置くと、通常のWebアプリとして使えるだけでなく、
