@@ -1,0 +1,12 @@
+{
+  "name": "成長の書 -Growth Quest-",
+  "short_name": "成長の書",
+  "description": "クエストをこなして成長する、あなただけの冒険者ステータス管理アプリ",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#05060f",
+  "theme_color": "#05060f",
+  "icons": [
+    { "src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}
