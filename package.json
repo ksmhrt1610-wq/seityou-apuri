@@ -48,7 +48,8 @@
     "publish": {
       "provider": "github",
       "owner": "ksmhrt1610-wq",
-      "repo": "seityou-apuri"
+      "repo": "seityou-apuri",
+      "draft": false
     }
   },
   "dependencies": {
